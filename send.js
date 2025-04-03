@@ -1,7 +1,9 @@
-require('dotenv').config();
-const { ethers } = require('ethers');
-const fs = require('fs/promises');
-const chalk = require('chalk');
+import dotenv from 'dotenv';
+dotenv.config();
+import { ethers } from 'ethers';;
+import fs from 'fs/promises';
+import chalk from 'chalk';
+
 
 
 
