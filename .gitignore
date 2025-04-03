@@ -1,0 +1,22 @@
+# Node.js dependencies
+/node_modules/
+
+# .env file for sensitive data like private key
+.env
+
+# Logs
+*.log
+
+# npm package lock file
+package-lock.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE or editor-specific files
+.vscode/
+.idea/
+
+# Build output
+/dist/

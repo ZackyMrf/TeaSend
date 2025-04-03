@@ -1,0 +1,17 @@
+{
+    "name": "teasend",
+    "version": "1.0.0",
+    "description": "Automated TEA transaction sender",
+    "type": "module",
+    "main": "send.js",
+    "scripts": {
+      "start": "node send.js"
+    },
+    "dependencies": {
+      "dotenv": "^16.3.1",
+      "ethers": "^6.10.0",
+      "chalk": "^5.3.0",
+      "fs-extra": "^11.2.0"
+    }
+  }
+  
