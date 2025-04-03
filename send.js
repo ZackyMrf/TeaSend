@@ -92,7 +92,7 @@ function scheduleTransactions() {
         }
         sendTransaction();
         count++;
-    }, Math.floor(Math.random() * 120000)); // Random antara 0-2 menit
+    }, Math.floor(Math.random() * 86400000)); // Random dalam 24 jam 
 }
 
 // 🚀 Jalankan kode utama
