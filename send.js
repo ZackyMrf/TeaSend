@@ -1,16 +1,13 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import { ethers } from 'ethers';;
+import { ethers } from 'ethers';
 import fs from 'fs/promises';
 import chalk from 'chalk';
 
-
-
-
 const RPC_URL = process.env.RPC_URL || "https://tea-sepolia.g.alchemy.com/public";
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
+const PRIVATE_KEYS = process.env.PRIVATE_KEYS ? process.env.PRIVATE_KEYS.split(',') : [];
 const provider = new ethers.JsonRpcProvider(RPC_URL);
-const wallet = new ethers.Wallet(PRIVATE_KEY, provider);
+const wallets = PRIVATE_KEYS.map(key => new ethers.Wallet(key, provider));
 
 const TOTAL_TRANSACTIONS_PER_DAY = 200;
 let transactionsDone = 0;
@@ -36,6 +33,15 @@ function getRandomRecipient() {
     return recipientAddresses[Math.floor(Math.random() * recipientAddresses.length)];
 }
 
+// 🔥 Ambil wallet secara acak
+function getRandomWallet() {
+    if (wallets.length === 0) {
+        console.log(chalk.red("❌ No wallets available!"));
+        return null;
+    }
+    return wallets[Math.floor(Math.random() * wallets.length)];
+}
+
 // ⛽ Mengecek harga gas
 async function checkGasFee() {
     const gasPrice = await provider.getFeeData();
@@ -55,15 +61,20 @@ async function sendTransaction() {
         const recipient = getRandomRecipient();
         if (!recipient) return;
 
+        const wallet = getRandomWallet();
+        if (!wallet) return;
+
         const balance = await provider.getBalance(wallet.address);
         const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits("10", "gwei");
         const estimatedGasFee = gasPrice * BigInt(21000);
         const amount = ethers.parseEther("0.001");
 
         if (balance < amount + estimatedGasFee) {
-            console.log(chalk.red("❌ Insufficient balance to send transaction!"));
+            console.log(chalk.red(`❌ Insufficient balance in wallet ${wallet.address} to send transaction!`));
             return;
         }
+
+        console.log(chalk.yellow(`🔑 Using wallet: ${wallet.address}`)); // Penanda akun yang sedang diproses
 
         const tx = await wallet.sendTransaction({
             to: recipient,
@@ -92,11 +103,15 @@ function scheduleTransactions() {
         }
         sendTransaction();
         count++;
-    }, Math.floor(Math.random() * 86400000)); // Random dalam 24 jam 
+    }, Math.floor(Math.random() * 864000)); // Random dalam 24 jam 
 }
 
 // 🚀 Jalankan kode utama
 (async () => {
+    if (wallets.length === 0) {
+        console.error(chalk.red("❌ No private keys provided in the environment variables."));
+        return;
+    }
     await loadRecipientAddresses();
     await checkGasFee();
     scheduleTransactions();
