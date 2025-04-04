@@ -29,12 +29,11 @@ Before running TeaSend, ensure you have the following:
 4. Copy the .env.example file to .env:
    ```bash
    cp .env.example .env
-5. Edit the .env file to add your  PRIVATE_KEY.
+5. Edit the .env file to add your  PRIVATE_KEYS.
 
 6. run 
     ```bash
     npm start
 
 
-source 
-https://github.com/airdroptestnet275
+
