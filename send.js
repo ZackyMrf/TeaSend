@@ -70,6 +70,37 @@ async function checkGasFee() {
     }
 }
 
+// Fungsi untuk mendapatkan gas price acak berdasarkan kondisi jaringan
+async function getRandomGasPrice() {
+    try {
+        const feeData = await provider.getFeeData();
+        if (!feeData.gasPrice) {
+            console.log(chalk.red("❌ Unable to fetch gas price from the network."));
+            return ethers.parseUnits("50", "gwei"); // Default fallback
+        }
+        
+        // Konversi gasPrice ke number untuk manipulasi
+        const currentGasPrice = Number(ethers.formatUnits(feeData.gasPrice, "gwei"));
+        
+        // Tambahkan faktor acak antara 10% hingga 50% ke gas price saat ini
+        const multiplier = 1 + (Math.random() * 0.4 + 0.1);
+        const randomGasPrice = currentGasPrice * multiplier;
+        
+        // Pastikan gas price minimal 20 gwei dan maksimal 150 gwei
+        const minGasPrice = 20;
+        const maxGasPrice = 150;
+        const finalGasPrice = Math.min(Math.max(randomGasPrice, minGasPrice), maxGasPrice);
+        
+        console.log(chalk.blue(`⛽ Network Gas Price: ${currentGasPrice.toFixed(2)} Gwei`));
+        console.log(chalk.blue(`⛽ Using Random Gas Price: ${finalGasPrice.toFixed(2)} Gwei (+${((multiplier-1)*100).toFixed(0)}%)`));
+        
+        return ethers.parseUnits(finalGasPrice.toFixed(2), "gwei");
+    } catch (error) {
+        console.error(chalk.red("❌ Error getting random gas price:", error));
+        return ethers.parseUnits("50", "gwei"); // Default fallback
+    }
+}
+
 // 📤 Mengirim transaksi ke alamat acak
 async function sendTransaction() {
     if (transactionsDone >= TOTAL_TRANSACTIONS_PER_DAY) {
@@ -92,7 +123,8 @@ async function sendTransaction() {
         console.log(chalk.blue(`💰 Wallet Balance: ${ethers.formatEther(balance)} TEA`));
 
         // Set gas price maksimal untuk mengatasi masalah "replacement fee too low"
-        const gasPriceValue = ethers.parseUnits("100", "gwei"); // Gas price tinggi untuk memastikan transaksi cepat
+       // Set gas price acak berdasarkan kondisi jaringan
+        const gasPriceValue = await getRandomGasPrice(); // Gas price tinggi untuk memastikan transaksi cepat
         
         // Generate random amount between 0.01 and 3 TEA
         const amount = getRandomAmount();
