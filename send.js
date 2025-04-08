@@ -89,7 +89,7 @@ async function sendTransaction() {
 
         // Periksa saldo wallet
         const balance = await provider.getBalance(wallet.address);
-        console.log(chalk.blue(`💰 Wallet Balance: ${ethers.formatEther(balance)} ETH`));
+        console.log(chalk.blue(`💰 Wallet Balance: ${ethers.formatEther(balance)} TEA`));
 
         // Set gas price maksimal untuk mengatasi masalah "replacement fee too low"
         const gasPriceValue = ethers.parseUnits("100", "gwei"); // Gas price tinggi untuk memastikan transaksi cepat
@@ -196,6 +196,7 @@ async function scheduleTransactions() {
 
     console.log(chalk.magenta(`✅ All ${TOTAL_TRANSACTIONS_PER_DAY} transactions scheduled for today have been completed.`));
 }
+
 // 🚀 Jalankan kode utama
 (async () => {
     console.log(chalk.blue("🚀 Starting TEA Send application..."));
