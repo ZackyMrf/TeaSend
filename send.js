@@ -65,7 +65,7 @@ async function sendTransaction() {
         if (!wallet) return;
 
         const balance = await provider.getBalance(wallet.address);
-        const gasPrice = (await provider.getFeeData()).gasPrice || ethers.parseUnits("10", "gwei");
+        const gasPrice = ethers.parseUnits("50", "gwei"); // Tetapkan gas fee maksimum
         const estimatedGasFee = gasPrice * BigInt(21000);
         const amount = ethers.parseEther("0.001");
 
@@ -74,7 +74,7 @@ async function sendTransaction() {
             return;
         }
 
-        console.log(chalk.yellow(`🔑 Using wallet: ${wallet.address}`)); // Penanda akun yang sedang diproses
+        console.log(chalk.yellow(`🔑 Using wallet: ${wallet.address}`));
 
         const tx = await wallet.sendTransaction({
             to: recipient,
@@ -86,26 +86,42 @@ async function sendTransaction() {
         console.log(chalk.green(`📤 SEND 0.001 TEA TO ${recipient} | Transaksi ke-${transactionsDone} hari ini`));
         console.log(chalk.cyan(`🔗 Tx Hash: ${tx.hash}`));
 
-        await tx.wait();
+        await tx.wait(); // Tunggu hingga transaksi selesai
     } catch (error) {
         console.error(chalk.red("❌ Transaction Error:", error));
     }
 }
 
-// 🕒 Menjadwalkan transaksi dengan waktu lebih cepat & efisien
-function scheduleTransactions() {
-    let count = 0;
-    const interval = setInterval(() => {
-        if (count >= TOTAL_TRANSACTIONS_PER_DAY) {
-            clearInterval(interval);
-            console.log(chalk.magenta("✅ All transactions scheduled for today."));
-            return;
-        }
-        sendTransaction();
-        count++;
-    }, Math.floor(Math.random() * 864000)); // Random dalam 24 jam 
-}
 
+// 🕒 Menjadwalkan transaksi dengan waktu lebih cepat & efisien
+async function scheduleTransactions() {
+    const delayInMinutes = 1440 / TOTAL_TRANSACTIONS_PER_DAY; // Hitung jeda waktu dalam menit
+    const delayInMilliseconds = delayInMinutes * 60 * 1000; // Konversi ke milidetik
+    let count = 0;
+
+    while (count < TOTAL_TRANSACTIONS_PER_DAY) {
+        try {
+            await sendTransaction(); // Tunggu hingga transaksi selesai
+            count++;
+            console.log(chalk.green(`✅ Transaction ${count} completed.`));
+
+            if (count < TOTAL_TRANSACTIONS_PER_DAY) {
+                console.log(chalk.yellow(`⏳ Waiting for ${delayInMinutes.toFixed(2)} minutes before the next transaction...`));
+
+                // Timer untuk menunjukkan waktu mundur
+                for (let remaining = delayInMilliseconds / 1000; remaining > 0; remaining--) {
+                    process.stdout.write(`\r⏳ Time remaining: ${remaining}s `);
+                    await new Promise(resolve => setTimeout(resolve, 1000)); // Tunggu 1 detik
+                }
+                console.log(); // Pindah ke baris baru setelah timer selesai
+            }
+        } catch (error) {
+            console.error(chalk.red(`❌ Error during transaction scheduling: ${error.message}`));
+        }
+    }
+
+    console.log(chalk.magenta("✅ All transactions scheduled for today."));
+}
 // 🚀 Jalankan kode utama
 (async () => {
     if (wallets.length === 0) {
