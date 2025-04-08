@@ -9,7 +9,10 @@ const PRIVATE_KEYS = process.env.PRIVATE_KEYS ? process.env.PRIVATE_KEYS.split('
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallets = PRIVATE_KEYS.map(key => new ethers.Wallet(key, provider));
 
-const TOTAL_TRANSACTIONS_PER_DAY = 200;
+const MIN_TRANSACTIONS = 125;
+const MAX_TRANSACTIONS = 150;
+const TOTAL_TRANSACTIONS_PER_DAY = Math.floor(Math.random() * (MAX_TRANSACTIONS - MIN_TRANSACTIONS + 1)) + MIN_TRANSACTIONS;
+
 let transactionsDone = 0;
 let recipientAddresses = [];
 
@@ -40,6 +43,15 @@ function getRandomWallet() {
         return null;
     }
     return wallets[Math.floor(Math.random() * wallets.length)];
+}
+
+// 🎲 Generate random amount between 0.01 and 3 TEA
+function getRandomAmount() {
+    // Random between 0.01 and 3 with 2 decimal precision
+    const min = 0.01;
+    const max = 3;
+    const randomAmount = (Math.random() * (max - min) + min).toFixed(2);
+    return ethers.parseEther(randomAmount.toString());
 }
 
 // ⛽ Mengecek harga gas
@@ -81,7 +93,11 @@ async function sendTransaction() {
 
         // Set gas price maksimal untuk mengatasi masalah "replacement fee too low"
         const gasPriceValue = ethers.parseUnits("100", "gwei"); // Gas price tinggi untuk memastikan transaksi cepat
-        const amount = ethers.parseEther("0.001");
+        
+        // Generate random amount between 0.01 and 3 TEA
+        const amount = getRandomAmount();
+        const amountInETH = ethers.formatEther(amount);
+        console.log(chalk.blue(`💸 Random Amount: ${amountInETH} TEA`));
         
         // Set gas limit default
         const gasLimit = BigInt(21000);
@@ -137,7 +153,7 @@ async function sendTransaction() {
 
         if (success) {
             transactionsDone++;
-            console.log(chalk.green(`✅ Transaction successful! Total transactions done: ${transactionsDone}`));
+            console.log(chalk.green(`✅ SEND ${amountInETH} TEA TO ${recipient} | Transaksi ke-${transactionsDone} hari ini`));
         }
     } catch (error) {
         console.error(chalk.red("❌ Error in transaction process:", error.message));
@@ -150,11 +166,13 @@ async function scheduleTransactions() {
     const delayInMilliseconds = delayInMinutes * 60 * 1000; // Konversi ke milidetik
     let count = 0;
 
+    console.log(chalk.blue(`🔄 Scheduled to send ${TOTAL_TRANSACTIONS_PER_DAY} transactions today (${delayInMinutes.toFixed(2)} minutes between each transaction).`));
+
     while (count < TOTAL_TRANSACTIONS_PER_DAY) {
         try {
             await sendTransaction(); // Tunggu hingga transaksi selesai
             count++;
-            console.log(chalk.green(`✅ Transaction ${count} completed.`));
+            console.log(chalk.green(`✅ Transaction ${count}/${TOTAL_TRANSACTIONS_PER_DAY} completed.`));
 
             if (count < TOTAL_TRANSACTIONS_PER_DAY) {
                 console.log(chalk.yellow(`⏳ Waiting for ${delayInMinutes.toFixed(2)} minutes before the next transaction...`));
@@ -176,9 +194,8 @@ async function scheduleTransactions() {
         }
     }
 
-    console.log(chalk.magenta("✅ All transactions scheduled for today."));
+    console.log(chalk.magenta(`✅ All ${TOTAL_TRANSACTIONS_PER_DAY} transactions scheduled for today have been completed.`));
 }
-
 // 🚀 Jalankan kode utama
 (async () => {
     console.log(chalk.blue("🚀 Starting TEA Send application..."));
