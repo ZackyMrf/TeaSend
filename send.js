@@ -9,8 +9,8 @@ const PRIVATE_KEYS = process.env.PRIVATE_KEYS ? process.env.PRIVATE_KEYS.split('
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallets = PRIVATE_KEYS.map(key => new ethers.Wallet(key, provider));
 
-const MIN_TRANSACTIONS = 125;
-const MAX_TRANSACTIONS = 150;
+const MIN_TRANSACTIONS = 105;
+const MAX_TRANSACTIONS = 135;
 const TOTAL_TRANSACTIONS_PER_DAY = Math.floor(Math.random() * (MAX_TRANSACTIONS - MIN_TRANSACTIONS + 1)) + MIN_TRANSACTIONS;
 
 let transactionsDone = 0;
@@ -49,7 +49,7 @@ function getRandomWallet() {
 function getRandomAmount() {
     // Random between 0.01 and 3 with 2 decimal precision
     const min = 0.01;
-    const max = 3;
+    const max = 1;
     const randomAmount = (Math.random() * (max - min) + min).toFixed(2);
     return ethers.parseEther(randomAmount.toString());
 }
@@ -87,7 +87,7 @@ async function getRandomGasPrice() {
         const randomGasPrice = currentGasPrice * multiplier;
         
         // Pastikan gas price minimal 20 gwei dan maksimal 150 gwei
-        const minGasPrice = 20;
+        const minGasPrice = 10;
         const maxGasPrice = 150;
         const finalGasPrice = Math.min(Math.max(randomGasPrice, minGasPrice), maxGasPrice);
         
