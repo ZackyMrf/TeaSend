@@ -7,130 +7,83 @@ import boxen from 'boxen';
 import ora from 'ora';
 import Table from 'cli-table3';
 import figlet from 'figlet';
-import gradient from 'gradient-string';
 
-// Tampilkan header aplikasi yang menarik
-console.log('\n');
-console.log(
-  gradient.pastel.multiline(
-    figlet.textSync('TEA Send', {
-      font: 'Standard',
-      horizontalLayout: 'default'
-    })
-  )
-);
-console.log(gradient.rainbow('✨ Automated TEA Token Transaction Sender  by MRF✨\n'));
+// Simple application header
+console.log('\n' + chalk.cyan(figlet.textSync('TEA Send', { font: 'Standard' })));
+console.log(chalk.blue('Automated TEA Token Transaction Sender by MRF\n'));
 
+// Configuration
 const RPC_URL = process.env.RPC_URL || "https://tea-sepolia.g.alchemy.com/public";
 const PRIVATE_KEYS = process.env.PRIVATE_KEYS ? process.env.PRIVATE_KEYS.split(',') : [];
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallets = PRIVATE_KEYS.map(key => new ethers.Wallet(key, provider));
 
-// Konfigurasi transaksi
+// Transaction settings
 const MIN_TRANSACTIONS = 125;
 const MAX_TRANSACTIONS = 150;
 const TOTAL_TRANSACTIONS_PER_DAY = Math.floor(Math.random() * (MAX_TRANSACTIONS - MIN_TRANSACTIONS + 1)) + MIN_TRANSACTIONS;
 
-// Statistik
+// Statistics tracking
 let transactionsDone = 0;
 let recipientAddresses = [];
 let totalAmountSent = 0;
 let successfulTransactions = 0;
 let failedTransactions = 0;
 
-// Opsi boxen untuk panel
-const boxenOptions = {
+// Simple box style for important messages
+const boxOptions = {
   padding: 1,
-  margin: 1,
-  borderStyle: 'round',
-  borderColor: 'green'
+  borderStyle: 'single',
+  borderColor: 'blue'
 };
 
-// 📊 Tampilkan statistik transaksi
+// Display transaction statistics
 function displayStats() {
-  const statsTable = new Table({
-    head: [chalk.cyan('Statistik'), chalk.cyan('Nilai')],
-    style: { head: [], border: [] }
-  });
-  
-  statsTable.push(
-    [chalk.green('Total Transaksi Target'), chalk.yellow(TOTAL_TRANSACTIONS_PER_DAY)],
-    [chalk.green('Transaksi Selesai'), chalk.yellow(transactionsDone)],
-    [chalk.green('Transaksi Sukses'), chalk.green(successfulTransactions)],
-    [chalk.green('Transaksi Gagal'), chalk.red(failedTransactions)],
-    [chalk.green('Total TEA Terkirim'), chalk.yellow(`${totalAmountSent.toFixed(4)} TEA`)],
-    [chalk.green('Interval Antar Transaksi'), chalk.yellow(`${(1440 / TOTAL_TRANSACTIONS_PER_DAY).toFixed(2)} menit`)]
-  );
-  
-  console.log(boxen(statsTable.toString(), {
-    ...boxenOptions,
-    title: chalk.white.bold('📊 Statistik Transaksi'),
-    titleAlignment: 'center',
-    borderColor: 'cyan'
-  }));
+  console.log('\n' + chalk.cyan('📊 STATISTICS:'));
+  console.log(`- Target: ${chalk.yellow(TOTAL_TRANSACTIONS_PER_DAY)} transactions`);
+  console.log(`- Completed: ${chalk.yellow(transactionsDone)} (${chalk.green(successfulTransactions)} success, ${chalk.red(failedTransactions)} failed)`);
+  console.log(`- Total sent: ${chalk.yellow(totalAmountSent.toFixed(4))} TEA`);
+  console.log(`- Interval: ${chalk.yellow((1440 / TOTAL_TRANSACTIONS_PER_DAY).toFixed(2))} minutes`);
+  console.log('');
 }
 
-// 🎯 Fungsi untuk membaca daftar alamat dari address.txt
+// Load recipient addresses from file
 async function loadRecipientAddresses() {
-  const spinner = ora('Memuat daftar alamat penerima...').start();
+  const spinner = ora('Loading recipient addresses...').start();
   
   try {
     const data = await fs.readFile('address.txt', 'utf8');
     recipientAddresses = data.split('\n').map(line => line.trim()).filter(line => line);
-    spinner.succeed(chalk.green(`Berhasil memuat ${recipientAddresses.length} alamat penerima`));
+    spinner.succeed(`Loaded ${recipientAddresses.length} recipient addresses`);
     
-    const addressTable = new Table({
-      head: [chalk.cyan('#'), chalk.cyan('Contoh Alamat')],
-      colWidths: [5, 45],
-      style: { head: [], border: [] }
-    });
-    
-    // Tampilkan 5 alamat contoh
-    for (let i = 0; i < Math.min(5, recipientAddresses.length); i++) {
-      addressTable.push([i + 1, recipientAddresses[i]]);
+    // Show a few sample addresses
+    if (recipientAddresses.length > 0) {
+      console.log(chalk.dim(`Sample addresses: ${recipientAddresses.slice(0, 3).join(', ')}${recipientAddresses.length > 3 ? '...' : ''}`));
     }
-    
-    if (recipientAddresses.length > 5) {
-      addressTable.push(['...', `... dan ${recipientAddresses.length - 5} lainnya`]);
-    }
-    
-    console.log(boxen(addressTable.toString(), {
-      ...boxenOptions,
-      title: chalk.white.bold('📋 Daftar Alamat'),
-      titleAlignment: 'center',
-      borderColor: 'yellow'
-    }));
-    
   } catch (error) {
-    spinner.fail(chalk.red(`Error membaca file address.txt: ${error.message}`));
+    spinner.fail(`Error reading address.txt: ${error.message}`);
   }
 }
 
-// 🔥 Ambil alamat penerima secara acak
+// Get random recipient address
 function getRandomRecipient() {
   if (recipientAddresses.length === 0) {
-    console.log(boxen(
-      chalk.red("❌ Tidak ada alamat penerima yang tersedia!"),
-      {...boxenOptions, borderColor: 'red'}
-    ));
+    console.log(chalk.red("❌ No recipient addresses available!"));
     return null;
   }
   return recipientAddresses[Math.floor(Math.random() * recipientAddresses.length)];
 }
 
-// 🔥 Ambil wallet secara acak
+// Get random wallet
 function getRandomWallet() {
   if (wallets.length === 0) {
-    console.log(boxen(
-      chalk.red("❌ Tidak ada wallet yang tersedia!"),
-      {...boxenOptions, borderColor: 'red'}
-    ));
+    console.log(chalk.red("❌ No wallets available!"));
     return null;
   }
   return wallets[Math.floor(Math.random() * wallets.length)];
 }
 
-// 🎲 Generate random amount between 0.01 and 3 TEA
+// Generate random TEA amount
 function getRandomAmount() {
   const min = 0.01;
   const max = 0.1;
@@ -138,207 +91,134 @@ function getRandomAmount() {
   return [ethers.parseEther(randomAmount), randomAmount];
 }
 
-// ⛽ Mengecek harga gas
+// Check current gas fee
 async function checkGasFee() {
-  const spinner = ora('Memeriksa harga gas jaringan...').start();
+  const spinner = ora('Checking network gas price...').start();
   
   try {
     const gasPrice = await provider.getFeeData();
     if (!gasPrice.gasPrice) {
-      spinner.fail(chalk.red("Tidak dapat mengambil harga gas dari jaringan."));
+      spinner.fail("Couldn't get gas price from network.");
       return;
     }
     
     const estimatedGasFee = gasPrice.gasPrice * BigInt(21000);
-    spinner.succeed(chalk.green(`Berhasil mendapatkan harga gas jaringan`));
-    
-    const gasTable = new Table({
-      style: { head: [], border: [] }
-    });
-    
-    gasTable.push(
-      [chalk.blue('⛽ Gas Price:'), chalk.yellow(`${ethers.formatUnits(gasPrice.gasPrice, 'gwei')} Gwei`)],
-      [chalk.blue('💰 Estimasi Fee:'), chalk.yellow(`${ethers.formatEther(estimatedGasFee)} TEA`)]
-    );
-    
-    console.log(boxen(gasTable.toString(), {
-      ...boxenOptions,
-      title: chalk.white.bold('⛽ Informasi Gas'),
-      titleAlignment: 'center',
-      borderColor: 'blue'
-    }));
+    spinner.succeed(`Current gas price: ${ethers.formatUnits(gasPrice.gasPrice, 'gwei')} Gwei`);
+    console.log(`Estimated fee: ${chalk.yellow(ethers.formatEther(estimatedGasFee))} TEA`);
   } catch (error) {
-    spinner.fail(chalk.red(`Error saat memeriksa harga gas: ${error.message}`));
+    spinner.fail(`Error checking gas price: ${error.message}`);
   }
 }
 
-// Fungsi untuk mendapatkan gas price acak berdasarkan kondisi jaringan
+// Get random gas price based on network conditions
 async function getRandomGasPrice() {
-  const spinner = ora('Mengkonfigurasi harga gas...').start();
-  
   try {
     const feeData = await provider.getFeeData();
     if (!feeData.gasPrice) {
-      spinner.warn(chalk.yellow("Tidak dapat mengambil harga gas dari jaringan. Menggunakan nilai default."));
       return ethers.parseUnits("50", "gwei");
     }
     
-    // Konversi gasPrice ke number untuk manipulasi
     const currentGasPrice = Number(ethers.formatUnits(feeData.gasPrice, "gwei"));
-    
-    // Tambahkan faktor acak antara 10% hingga 50% ke gas price saat ini
     const multiplier = 1 + (Math.random() * 0.4 + 0.1);
     const randomGasPrice = currentGasPrice * multiplier;
     
-    // Pastikan gas price minimal 20 gwei dan maksimal 150 gwei
     const minGasPrice = 20;
     const maxGasPrice = 2000;
     const finalGasPrice = Math.min(Math.max(randomGasPrice, minGasPrice), maxGasPrice);
     
-    spinner.succeed(chalk.green(`Gas price dikonfigurasi dengan bonus ${((multiplier-1)*100).toFixed(0)}%`));
-    
-    const gasTable = new Table({
-      style: { head: [], border: [] }
-    });
-    
-    gasTable.push(
-      [chalk.blue('Network Gas Price:'), chalk.yellow(`${currentGasPrice.toFixed(2)} Gwei`)],
-      [chalk.blue('Configured Gas Price:'), chalk.yellow(`${finalGasPrice.toFixed(2)} Gwei`)]
-    );
-    
-    console.log(boxen(gasTable.toString(), {
-      padding: 1,
-      margin: 0,
-      borderStyle: 'round',
-      borderColor: 'blue'
-    }));
-    
     return ethers.parseUnits(finalGasPrice.toFixed(2), "gwei");
   } catch (error) {
-    spinner.fail(chalk.red(`Error pada gas price: ${error.message}`));
-    return ethers.parseUnits("50", "gwei"); // Default fallback
+    console.log(chalk.yellow(`Gas price error: ${error.message}. Using default.`));
+    return ethers.parseUnits("50", "gwei");
   }
 }
 
-// 📤 Mengirim transaksi ke alamat acak
+// Send transaction to random address
 async function sendTransaction() {
   if (transactionsDone >= TOTAL_TRANSACTIONS_PER_DAY) {
-    console.log(boxen(
-      chalk.yellow("🚀 Batas transaksi harian telah tercapai!"),
-      {...boxenOptions, borderColor: 'yellow'}
-    ));
+    console.log(chalk.yellow("🚀 Daily transaction limit reached!"));
     return;
   }
 
-  console.log('\n' + gradient.cristal('━━━━━━━━━━━━━━━━ TRANSAKSI BARU ━━━━━━━━━━━━━━━━') + '\n');
+  console.log(chalk.cyan('\n========== NEW TRANSACTION =========='));
 
   try {
     const recipient = getRandomRecipient();
     if (!recipient || !ethers.isAddress(recipient)) {
-      console.error(boxen(
-        chalk.red(`❌ Alamat penerima tidak valid: ${recipient}`),
-        {...boxenOptions, borderColor: 'red'}
-      ));
+      console.error(chalk.red(`❌ Invalid recipient address: ${recipient}`));
       return;
     }
 
     const wallet = getRandomWallet();
     if (!wallet) return;
 
-    // Periksa saldo wallet
-    const balanceSpinner = ora('Memeriksa saldo wallet...').start();
+    // Check wallet balance
+    const balanceSpinner = ora('Checking wallet balance...').start();
     const balance = await provider.getBalance(wallet.address);
-    balanceSpinner.succeed(chalk.green(`Saldo wallet: ${ethers.formatEther(balance)} TEA`));
+    balanceSpinner.succeed(`Wallet balance: ${ethers.formatEther(balance)} TEA`);
 
-    // Set gas price acak
+    // Set random gas price
     const gasPriceValue = await getRandomGasPrice();
     
     // Generate random amount
     const [amount, amountString] = getRandomAmount();
-    console.log(chalk.green(`💸 Jumlah transaksi: ${amountString} TEA`));
     
-    // Set gas limit default
+    // Set default gas limit
     const gasLimit = BigInt(21000);
     const totalEstimatedGasFee = gasPriceValue * gasLimit;
 
-    // Informasi transaksi
-    const txInfoTable = new Table({
-      style: { head: [], border: [] }
-    });
-    
-    txInfoTable.push(
-      [chalk.cyan('Dari Wallet:'), chalk.yellow(wallet.address)],
-      [chalk.cyan('Ke Alamat:'), chalk.yellow(recipient)],
-      [chalk.cyan('Jumlah:'), chalk.yellow(`${amountString} TEA`)],
-      [chalk.cyan('Estimasi Fee:'), chalk.yellow(`${ethers.formatEther(totalEstimatedGasFee)} TEA`)]
-    );
-    
-    console.log(boxen(txInfoTable.toString(), {
-      ...boxenOptions,
-      title: chalk.white.bold('🔄 Detail Transaksi'),
-      titleAlignment: 'center',
-      borderColor: 'magenta'
-    }));
+    // Transaction info
+    console.log(chalk.cyan('Transaction Details:'));
+    console.log(`- From: ${chalk.yellow(wallet.address.slice(0, 10) + '...' + wallet.address.slice(-8))}`);
+    console.log(`- To:   ${chalk.yellow(recipient.slice(0, 10) + '...' + recipient.slice(-8))}`);
+    console.log(`- Amount: ${chalk.yellow(amountString)} TEA`);
+    console.log(`- Fee: ~${chalk.yellow(ethers.formatEther(totalEstimatedGasFee))} TEA`);
 
-    // Cek saldo mencukupi
+    // Check sufficient balance
     if (balance < (amount + totalEstimatedGasFee)) {
-      console.log(boxen(
-        chalk.red(`❌ Saldo tidak mencukupi di wallet ${wallet.address} untuk melakukan transaksi!`),
-        {...boxenOptions, borderColor: 'red'}
-      ));
+      console.log(chalk.red(`❌ Insufficient balance for transaction!`));
       failedTransactions++;
       return;
     }
 
-    let tx;
     let success = false;
     let retryCount = 0;
     const MAX_RETRIES = 5;
 
     while (!success && retryCount < MAX_RETRIES) {
       try {
-        const txSpinner = ora('Mengirim transaksi...').start();
+        const txSpinner = ora('Sending transaction...').start();
         
-        tx = await wallet.sendTransaction({
+        const tx = await wallet.sendTransaction({
           to: recipient,
           value: amount,
           gasPrice: gasPriceValue,
           gasLimit: gasLimit
         });
 
-        txSpinner.succeed(chalk.green(`Transaksi terkirim dengan hash: ${tx.hash}`));
+        txSpinner.succeed(`Transaction sent with hash: ${tx.hash}`);
         
-        const confirmSpinner = ora('Menunggu konfirmasi blockchain...').start();
+        const confirmSpinner = ora('Waiting for blockchain confirmation...').start();
         const receipt = await tx.wait();
         
         if (receipt && receipt.status === 1) {
           success = true;
-          confirmSpinner.succeed(chalk.green(`Transaksi terkonfirmasi di blok ${receipt.blockNumber}`));
-          
-          console.log(boxen(
-            gradient.pastel(`✅ Transaksi berhasil!`),
-            {...boxenOptions, borderColor: 'green'}
-          ));
+          confirmSpinner.succeed(`Transaction confirmed in block ${receipt.blockNumber}`);
+          console.log(chalk.green(`✅ Transaction successful!`));
         } else {
-          confirmSpinner.fail(chalk.red('Transaksi gagal di blockchain'));
-          throw new Error("Transaksi gagal pada blockchain");
+          confirmSpinner.fail('Transaction failed on blockchain');
+          throw new Error("Transaction failed on blockchain");
         }
       } catch (error) {
         retryCount++;
-        console.error(boxen(
-          chalk.red(`❌ Percobaan transaksi ${retryCount}/${MAX_RETRIES} gagal: ${error.message}`),
-          {...boxenOptions, borderColor: 'red'}
-        ));
+        console.error(chalk.red(`❌ Transaction attempt ${retryCount}/${MAX_RETRIES} failed: ${error.message}`));
         
         if (retryCount < MAX_RETRIES) {
-          const retrySpinner = ora(`Mencoba ulang dalam 10 detik...`).start();
+          const retrySpinner = ora(`Retrying in 10 seconds...`).start();
           await new Promise(resolve => setTimeout(resolve, 10000));
           retrySpinner.stop();
         } else {
-          console.error(boxen(
-            chalk.red("❌ Batas percobaan ulang tercapai. Beralih ke transaksi berikutnya."),
-            {...boxenOptions, borderColor: 'red'}
-          ));
+          console.error(chalk.red("❌ Max retries reached. Moving to next transaction."));
           failedTransactions++;
         }
       }
@@ -350,53 +230,45 @@ async function sendTransaction() {
       totalAmountSent += parseFloat(amountString);
       
       console.log(boxen(
-        gradient.rainbow(`✅ BERHASIL mengirim ${amountString} TEA ke ${recipient}\nTransaksi ke-${transactionsDone} dari ${TOTAL_TRANSACTIONS_PER_DAY} hari ini`),
-        {...boxenOptions, title: chalk.white.bold('💎 SUKSES'), titleAlignment: 'center', borderColor: 'green'}
+        chalk.green(`✅ Successfully sent ${amountString} TEA to ${recipient}\nTransaction ${transactionsDone} of ${TOTAL_TRANSACTIONS_PER_DAY} today`),
+        boxOptions
       ));
     }
   } catch (error) {
-    console.error(boxen(
-      chalk.red(`❌ Error dalam proses transaksi: ${error.message}`),
-      {...boxenOptions, borderColor: 'red'}
-    ));
+    console.error(chalk.red(`❌ Transaction process error: ${error.message}`));
     failedTransactions++;
   }
 }
 
-// 🕒 Menjadwalkan transaksi dengan waktu lebih efisien
+// Schedule transactions with efficient timing
 async function scheduleTransactions() {
-  const delayInMinutes = 1440 / TOTAL_TRANSACTIONS_PER_DAY; // Hitung jeda waktu dalam menit
-  const delayInMilliseconds = delayInMinutes * 60 * 1000; // Konversi ke milidetik
+  const delayInMinutes = 1440 / TOTAL_TRANSACTIONS_PER_DAY;
+  const delayInMilliseconds = delayInMinutes * 60 * 1000;
   let count = 0;
 
-  console.log(boxen(
-    gradient.atlas(`📅 Terjadwal untuk mengirim ${TOTAL_TRANSACTIONS_PER_DAY} transaksi hari ini\n⏱️ Interval: ${delayInMinutes.toFixed(2)} menit antar transaksi`),
-    {...boxenOptions, title: chalk.white.bold('🚀 Scheduler'), titleAlignment: 'center', borderColor: 'blue'}
-  ));
+  console.log(chalk.blue(`📅 Scheduled to send ${TOTAL_TRANSACTIONS_PER_DAY} transactions today`));
+  console.log(chalk.blue(`⏱️ Interval: ${delayInMinutes.toFixed(2)} minutes between transactions`));
 
-  // Tampilkan statistik awal
+  // Display initial stats
   displayStats();
 
   while (count < TOTAL_TRANSACTIONS_PER_DAY) {
     try {
-      await sendTransaction(); // Tunggu hingga transaksi selesai
+      await sendTransaction();
       count++;
 
-      // Update statistik setelah setiap transaksi
+      // Update stats after each transaction
       displayStats();
 
       if (count < TOTAL_TRANSACTIONS_PER_DAY) {
-        console.log(boxen(
-          chalk.yellow(`⏳ Menunggu ${delayInMinutes.toFixed(2)} menit sebelum transaksi berikutnya...`),
-          {...boxenOptions, title: chalk.white.bold('⏱️ Timer'), borderColor: 'yellow'}
-        ));
+        console.log(chalk.yellow(`⏳ Waiting ${delayInMinutes.toFixed(2)} minutes before next transaction...`));
         
-        // Timer dengan tampilan yang lebih menarik
+        // Simple timer
         const startTime = Date.now();
         const endTime = startTime + delayInMilliseconds;
         
         const timerSpinner = ora({
-          text: 'Menunggu waktu transaksi berikutnya...',
+          text: 'Waiting for next transaction time...',
           color: 'yellow'
         }).start();
         
@@ -404,57 +276,43 @@ async function scheduleTransactions() {
           const remainingMs = endTime - Date.now();
           const remainingMinutes = Math.floor(remainingMs / 60000);
           const remainingSeconds = Math.floor((remainingMs % 60000) / 1000);
-          timerSpinner.text = chalk.yellow(`⏳ Waktu tersisa: ${remainingMinutes}m ${remainingSeconds}s`);
+          timerSpinner.text = `⏳ Time remaining: ${remainingMinutes}m ${remainingSeconds}s`;
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
         
-        timerSpinner.succeed(chalk.green('✅ Waktu tunggu selesai, memulai transaksi berikutnya'));
+        timerSpinner.succeed('✅ Wait time complete, starting next transaction');
       }
     } catch (error) {
-      console.error(boxen(
-        chalk.red(`❌ Error saat penjadwalan transaksi: ${error.message}`),
-        {...boxenOptions, borderColor: 'red'}
-      ));
+      console.error(chalk.red(`❌ Error in transaction scheduling: ${error.message}`));
     }
   }
 
   console.log(boxen(
-    gradient.rainbow(`🎉 Semua ${TOTAL_TRANSACTIONS_PER_DAY} transaksi untuk hari ini telah selesai!\n` +
-    `📊 Total TEA terkirim: ${totalAmountSent.toFixed(4)} TEA\n` +
-    `✅ Transaksi sukses: ${successfulTransactions}\n` +
-    `❌ Transaksi gagal: ${failedTransactions}`),
-    {...boxenOptions, title: chalk.white.bold('✨ SELESAI'), titleAlignment: 'center', borderColor: 'magenta'}
+    chalk.green(`🎉 All ${TOTAL_TRANSACTIONS_PER_DAY} transactions completed!\n`) +
+    `- Total TEA sent: ${totalAmountSent.toFixed(4)} TEA\n` +
+    `- Successful: ${successfulTransactions}\n` +
+    `- Failed: ${failedTransactions}`,
+    {...boxOptions, borderColor: 'green'}
   ));
 }
 
-// 🚀 Jalankan kode utama
+// Main execution
 (async () => {
-  console.log(boxen(
-    gradient.pastel('🚀 Memulai aplikasi TEA Send...\n📡 Terhubung ke: ' + RPC_URL),
-    {...boxenOptions, title: chalk.white.bold('🔰 Inisialisasi'), titleAlignment: 'center', borderColor: 'blue'}
-  ));
+  console.log(chalk.blue(`🚀 Starting TEA Send...\n📡 Connected to: ${RPC_URL}`));
   
-  // Validasi konfigurasi
+  // Validate configuration
   if (wallets.length === 0) {
-    console.error(boxen(
-      chalk.red("❌ Tidak ada private key yang disediakan dalam environment variables."),
-      {...boxenOptions, borderColor: 'red'}
-    ));
+    console.error(chalk.red("❌ No private keys provided in environment variables."));
     process.exit(1);
   }
   
-  console.log(boxen(
-    chalk.green(`✅ Berhasil memuat ${wallets.length} wallet\n🎯 Target transaksi: ${TOTAL_TRANSACTIONS_PER_DAY} per hari`),
-    {...boxenOptions, borderColor: 'green'}
-  ));
+  console.log(chalk.green(`✅ Successfully loaded ${wallets.length} wallets`));
+  console.log(chalk.green(`🎯 Target: ${TOTAL_TRANSACTIONS_PER_DAY} transactions per day`));
   
   await loadRecipientAddresses();
   await checkGasFee();
   
-  console.log(boxen(
-    gradient.cristal('🔄 Memulai penjadwal transaksi...'),
-    {...boxenOptions, borderColor: 'blue'}
-  ));
+  console.log(chalk.blue('\n🔄 Starting transaction scheduler...\n'));
   
   await scheduleTransactions();
 })();
