@@ -8,9 +8,14 @@
         "start": "node send.js"
     },
     "dependencies": {
+        "boxen": "^8.0.1",
         "chalk": "^5.3.0",
+        "cli-table3": "^0.6.5",
         "dotenv": "^16.4.7",
         "ethers": "^6.10.0",
-        "fs-extra": "^11.2.0"
+        "figlet": "^1.8.1",
+        "fs-extra": "^11.2.0",
+        "gradient-string": "^3.0.0",
+        "ora": "^8.2.0"
     }
 }
